@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s \"http://localhost:3000/api/search?sector=idraulici&area=Treviso\")",
+      "Bash(curl -v \"http://localhost:3000/api/search?sector=idraulici&area=Treviso\")",
+      "Bash(ls C:/Users/scatt/htdocs/HiddenLayer/next.config*)",
+      "Bash(node -e ':*)",
+      "Bash(curl -s http://localhost:3000/api/search?sector=idraulici\\\\&area=Treviso)",
+      "Bash(npx next:*)",
+      "Bash(curl -s \"http://localhost:3001/api/search?sector=idraulici&area=Treviso\")",
+      "Read(//tmp/**)",
+      "Bash(ls C:/Users/scatt/htdocs/HiddenLayer/prisma.config*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(python3 -c \"import json,sys; users=json.load\\(sys.stdin\\); [print\\(u['username']\\) for u in users]\")"
+    ]
+  }
+}
