@@ -431,7 +431,7 @@ function BusinessCard({
         {business.phone && <span>{business.phone}</span>}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={onSave}
           disabled={isSaved || isSaving}

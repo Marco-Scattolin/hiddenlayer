@@ -12,14 +12,14 @@ export default function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-1 ml-6">
+    <nav className="flex items-center gap-0.5 sm:gap-1 ml-2 sm:ml-6">
       {LINKS.map(({ href, label }) => {
         const active = pathname === href;
         return (
           <Link
             key={href}
             href={href}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs font-medium px-2 sm:px-3 py-1.5 rounded-lg transition-colors"
             style={{
               backgroundColor: active ? "#383838" : "transparent",
               color: "#f2f2f2",

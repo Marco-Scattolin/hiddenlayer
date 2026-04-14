@@ -12,19 +12,22 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen flex flex-col font-[family-name:var(--font-inter)]" style={{ backgroundColor: "#252525", color: "#f2f2f2" }}>
-      <header className="px-8 py-2 flex items-center" style={{ borderBottom: "1px solid #333" }}>
-        <Image
-          src="/logo.png"
-          alt="HiddenLayer"
-          width={200}
-          height={133}
-          priority
-        />
+      <header className="px-3 sm:px-8 py-2 flex items-center" style={{ borderBottom: "1px solid #333" }}>
+        <div className="w-28 sm:w-[200px] shrink-0">
+          <Image
+            src="/logo.png"
+            alt="HiddenLayer"
+            width={200}
+            height={133}
+            priority
+            className="w-full h-auto"
+          />
+        </div>
         <NavLinks />
         <UserMenu username={session.username} />
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-4 py-16">
+      <main className="flex-1 flex flex-col items-center px-4 py-8 sm:py-16">
         <div className="w-full max-w-lg">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold mb-2" style={{ color: "#f2f2f2" }}>

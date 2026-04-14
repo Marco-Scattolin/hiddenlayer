@@ -79,7 +79,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
             </p>
           )}
 
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 flex-wrap mt-3">
             <button
               onClick={() => handleRemove(contact.mapsUrl)}
               disabled={removing === contact.mapsUrl}

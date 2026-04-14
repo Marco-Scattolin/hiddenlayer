@@ -196,7 +196,7 @@ export default function AdminPanel() {
         </p>
 
         <form onSubmit={handleCreate} className="flex flex-col gap-3">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="Username *"
@@ -283,7 +283,7 @@ export default function AdminPanel() {
                   {mode.type === "editing" ? (
                     /* ── Edit row ── */
                     <div className="flex flex-col gap-3">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           type="text"
                           value={mode.username}
@@ -339,7 +339,7 @@ export default function AdminPanel() {
                         </span>
                       </div>
 
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         <button onClick={() => startEdit(user)} {...btnGhost}>
                           Modifica
                         </button>
