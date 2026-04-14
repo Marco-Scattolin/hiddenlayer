@@ -58,3 +58,14 @@ input::placeholder {
 .hl-button:active {
   background: #901640 !important;
 }
+
+/* Visible keyboard focus ring for all interactive elements */
+:focus-visible {
+  outline: 2px solid #c92055;
+  outline-offset: 2px;
+}
+
+/* hl-input already uses box-shadow for focus; suppress the outline there */
+.hl-input:focus-visible {
+  outline: none;
+}

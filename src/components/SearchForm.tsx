@@ -199,7 +199,7 @@ export default function SearchForm() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-xs" style={{ color: "#f2f2f2", opacity: 0.3 }}>
+      <p className="mt-4 text-center text-xs" style={{ color: "#9e9e9e" }}>
         I risultati escludono clienti esistenti e attività già contattate.
       </p>
 
@@ -210,7 +210,7 @@ export default function SearchForm() {
       )}
 
       {status.type === "done" && status.businesses.length === 0 && (
-        <div className="mt-6 text-center text-sm" style={{ color: "#f2f2f2", opacity: 0.4 }}>
+        <div className="mt-6 text-center text-sm" style={{ color: "#9e9e9e" }}>
           Nessuna attività trovata senza presenza web.
         </div>
       )}
@@ -235,20 +235,24 @@ export default function SearchForm() {
           onClick={(e) => { if (e.target === e.currentTarget) closeReport(); }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-modal-title"
             className="w-full max-w-sm rounded-xl p-6 flex flex-col gap-4"
             style={{ backgroundColor: "#2e2e2e", border: "1px solid #383838" }}
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-sm font-semibold" style={{ color: "#f2f2f2" }}>
+                <p id="report-modal-title" className="text-sm font-semibold" style={{ color: "#f2f2f2" }}>
                   Segnala attività
                 </p>
-                <p className="text-xs mt-0.5 truncate max-w-xs" style={{ color: "#f2f2f2", opacity: 0.45 }}>
+                <p className="text-xs mt-0.5 truncate max-w-xs" style={{ color: "#9e9e9e" }}>
                   {reportTarget.name}
                 </p>
               </div>
               <button
                 onClick={closeReport}
+                aria-label="Chiudi"
                 className="shrink-0 text-sm w-7 h-7 flex items-center justify-center rounded-lg"
                 style={{ color: "#f2f2f2", opacity: 0.4, backgroundColor: "#383838" }}
               >
@@ -263,10 +267,11 @@ export default function SearchForm() {
             ) : (
               <form onSubmit={handleReportSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium" style={{ color: "#f2f2f2" }}>
+                  <label htmlFor="report-subject" className="text-sm font-medium" style={{ color: "#f2f2f2" }}>
                     Oggetto *
                   </label>
                   <select
+                    id="report-subject"
                     value={reportSubject}
                     onChange={(e) => setReportSubject(e.target.value)}
                     required
@@ -275,7 +280,6 @@ export default function SearchForm() {
                       backgroundColor: "#1e1e1e",
                       border: "1px solid #3a3a3a",
                       color: reportSubject ? "#f2f2f2" : "#555",
-                      outline: "none",
                     }}
                   >
                     <option value="">Seleziona...</option>
@@ -286,10 +290,11 @@ export default function SearchForm() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium" style={{ color: "#f2f2f2" }}>
+                  <label htmlFor="report-note" className="text-sm font-medium" style={{ color: "#f2f2f2" }}>
                     Note
                   </label>
                   <textarea
+                    id="report-note"
                     value={reportNote}
                     onChange={(e) => setReportNote(e.target.value)}
                     rows={3}
@@ -353,10 +358,10 @@ function ResultsList({
 
   return (
     <div className="mt-8 flex flex-col gap-3">
-      <p className="text-xs px-3 py-2 rounded-lg mb-2" style={{ backgroundColor: "#2e2e2e", border: "1px solid #383838", color: "#f2f2f2", opacity: 0.5 }}>
+      <p className="text-xs px-3 py-2 rounded-lg mb-2" style={{ backgroundColor: "rgba(46,46,46,0.5)", border: "1px solid rgba(56,56,56,0.5)", color: "#9e9e9e" }}>
         Risultati filtrati per assenza di presenza web. Verifica i dettagli prima del contatto.
       </p>
-      <p className="text-xs mb-1" style={{ color: "#f2f2f2", opacity: 0.4 }}>
+      <p aria-live="polite" aria-atomic="true" className="text-xs mb-1" style={{ color: "#9e9e9e" }}>
         {businesses.length} {businesses.length === 1 ? "attività trovata" : "attività trovate"}
       </p>
 
@@ -376,20 +381,20 @@ function ResultsList({
           <button
             onClick={() => setPage(page - 1)}
             disabled={page === 0}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="text-xs font-medium px-3 py-1.5 min-h-[44px] md:min-h-0 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#383838", color: "#f2f2f2" }}
             onMouseEnter={(e) => { if (page > 0) e.currentTarget.style.backgroundColor = "#444"; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#383838"; }}
           >
             ← Precedente
           </button>
-          <span className="text-xs" style={{ color: "#f2f2f2", opacity: 0.4 }}>
+          <span className="text-xs" style={{ color: "#9e9e9e" }}>
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage(page + 1)}
             disabled={page >= totalPages - 1}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="text-xs font-medium px-3 py-1.5 min-h-[44px] md:min-h-0 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#383838", color: "#f2f2f2" }}
             onMouseEnter={(e) => { if (page < totalPages - 1) e.currentTarget.style.backgroundColor = "#444"; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#383838"; }}
@@ -430,7 +435,7 @@ function BusinessCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={`https://places.googleapis.com/v1/${business.photo_reference}/media?maxWidthPx=400&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
-            alt=""
+            alt={`Foto di ${business.name}`}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
           />
         ) : (
@@ -444,7 +449,7 @@ function BusinessCard({
               position: "absolute", inset: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{
+              <span aria-hidden="true" style={{
                 fontSize: "42px", fontWeight: 700, lineHeight: 1,
                 color: "rgba(255,255,255,0.1)",
                 userSelect: "none",
@@ -468,7 +473,7 @@ function BusinessCard({
               fontSize: "10px", fontWeight: 500, lineHeight: 1,
               padding: "3px 8px", borderRadius: "999px", marginBottom: "5px",
               backgroundColor: "rgba(255,255,255,0.1)",
-              color: "rgba(242,242,242,0.75)",
+              color: "rgba(242,242,242,0.9)",
               border: "1px solid rgba(255,255,255,0.08)",
             }}>
               {business.category}
@@ -515,7 +520,7 @@ function BusinessCard({
               {business.rating.toFixed(1)}
             </span>
             {business.user_ratings_total != null && (
-              <span style={{ fontSize: "11px", color: "#f2f2f2", opacity: 0.38 }}>
+              <span style={{ fontSize: "11px", color: "#9e9e9e" }}>
                 ({business.user_ratings_total.toLocaleString("it-IT")} recensioni)
               </span>
             )}
@@ -527,7 +532,7 @@ function BusinessCard({
               width: "7px", height: "7px", borderRadius: "50%", flexShrink: 0,
               backgroundColor: business.opening_hours.open_now ? "#4caf6e" : "#d95c5c",
             }} />
-            <span style={{ fontSize: "12px", color: business.opening_hours.open_now ? "#6bcf8f" : "#e07070" }}>
+            <span style={{ fontSize: "12px", color: business.opening_hours.open_now ? "#6bcf8f" : "#e87878" }}>
               {business.opening_hours.open_now ? "Aperto" : "Chiuso"}
             </span>
           </div>
@@ -561,10 +566,13 @@ function BusinessCard({
         <button
           onClick={onSave}
           disabled={isSaved || isSaving}
+          role="button"
+          aria-label={isSaved ? "Rimuovi dai salvati" : "Salva contatto"}
+          aria-pressed={isSaved}
           title={isSaved ? "Rimuovi dai salvati" : "Salva contatto"}
-          className="flex items-center justify-center rounded-lg disabled:cursor-default"
+          className="flex items-center justify-center rounded-lg disabled:cursor-default w-11 h-11 md:w-8 md:h-8"
           style={{
-            width: "32px", height: "32px", fontSize: "14px",
+            fontSize: "14px",
             backgroundColor: isSaved ? "#2a2200" : "#2a2a2a",
             border: `1px solid ${isSaved ? "#7a6010" : "#3a3a3a"}`,
             color: isSaved ? "#c9a030" : "#f2f2f2",
@@ -578,7 +586,8 @@ function BusinessCard({
           href={business.mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-medium rounded-lg"
+          aria-label={`Apri ${business.name} su Google Maps`}
+          className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
           style={{ padding: "6px 12px", backgroundColor: "#383838", color: "#f2f2f2", textDecoration: "none" }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#444")}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#383838")}
@@ -587,7 +596,8 @@ function BusinessCard({
         </a>
         <button
           onClick={onReport}
-          className="text-xs font-medium rounded-lg"
+          aria-label={`Segnala ${business.name}`}
+          className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
           style={{ padding: "6px 12px", backgroundColor: "#2a1a1a", border: "1px solid #4a2020", color: "#c97070" }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3a2020")}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2a1a1a")}

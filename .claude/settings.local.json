@@ -17,7 +17,8 @@
       "Bash(curl:*)",
       "Bash(node:*)",
       "Bash(python3 -c \"import json,sys; users=json.load\\(sys.stdin\\); [print\\(u['username']\\) for u in users]\")",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"TSC_EXIT:$?\")"
     ]
   }
 }

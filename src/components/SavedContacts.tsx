@@ -41,7 +41,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
 
   if (contacts.length === 0) {
     return (
-      <p className="text-sm" style={{ color: "#f2f2f2", opacity: 0.4 }}>
+      <p className="text-sm" style={{ color: "#9e9e9e" }}>
         Nessun contatto salvato.
       </p>
     );
@@ -72,7 +72,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                 position: "absolute", inset: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <span style={{
+                <span aria-hidden="true" style={{
                   fontSize: "42px", fontWeight: 700, lineHeight: 1,
                   color: "rgba(255,255,255,0.1)",
                   userSelect: "none",
@@ -93,7 +93,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                     fontSize: "10px", fontWeight: 500, lineHeight: 1,
                     padding: "3px 8px", borderRadius: "999px", marginBottom: "5px",
                     backgroundColor: "rgba(255,255,255,0.1)",
-                    color: "rgba(242,242,242,0.75)",
+                    color: "rgba(242,242,242,0.9)",
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}>
                     {contact.category}
@@ -143,9 +143,10 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                 onClick={() => handleRemove(contact.mapsUrl)}
                 disabled={isRemoving}
                 title="Rimuovi dai salvati"
-                className="flex items-center justify-center rounded-lg"
+                aria-label={`Rimuovi ${contact.name} dai salvati`}
+                className="flex items-center justify-center rounded-lg w-11 h-11 md:w-8 md:h-8"
                 style={{
-                  width: "32px", height: "32px", fontSize: "14px",
+                  fontSize: "14px",
                   backgroundColor: "#2a2200",
                   border: "1px solid #7a6010",
                   color: "#c9a030",
@@ -160,14 +161,15 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                 href={contact.mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-medium rounded-lg"
+                aria-label={`Apri ${contact.name} su Google Maps`}
+                className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
                 style={{ padding: "6px 12px", backgroundColor: "#383838", color: "#f2f2f2", textDecoration: "none" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#444")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#383838")}
               >
                 Apri su Google Maps ↗
               </a>
-              <span className="text-xs ml-auto" style={{ color: "#f2f2f2", opacity: 0.3 }}>
+              <span className="text-xs ml-auto" style={{ color: "#9e9e9e" }}>
                 {new Date(contact.savedAt).toLocaleDateString("it-IT")}
               </span>
             </div>
