@@ -11,6 +11,17 @@ interface PlaceResult {
   nationalPhoneNumber?: string;
   googleMapsUri?: string;
   primaryTypeDisplayName?: { text: string };
+  rating?: number;
+  userRatingCount?: number;
+  regularOpeningHours?: {
+    weekdayDescriptions?: string[];
+    openNow?: boolean;
+  };
+  currentOpeningHours?: {
+    openNow?: boolean;
+  };
+  businessStatus?: string;
+  photos?: Array<{ name: string }>;
 }
 
 interface Business {
@@ -20,6 +31,14 @@ interface Business {
   phone: string | null;
   mapsUrl: string;
   reason: "no_website" | "unreachable_website";
+  rating: number | null;
+  user_ratings_total: number | null;
+  opening_hours: {
+    weekday_text: string[] | null;
+    open_now: boolean | null;
+  };
+  business_status: string | null;
+  photo_reference: string | null;
 }
 
 // Returns true if the server sends any HTTP response (even 4xx/5xx).
@@ -113,6 +132,12 @@ const PLACES_FIELD_MASK = [
   "places.nationalPhoneNumber",
   "places.googleMapsUri",
   "places.primaryTypeDisplayName",
+  "places.rating",
+  "places.userRatingCount",
+  "places.regularOpeningHours",
+  "places.currentOpeningHours",
+  "places.businessStatus",
+  "places.photos",
   "nextPageToken",
 ].join(",");
 
@@ -236,15 +261,27 @@ export async function GET(request: NextRequest) {
         place.googleMapsUri ??
         `https://www.google.com/maps/place/?q=place_id:${place.id}`;
 
+      const rating = place.rating ?? null;
+      const user_ratings_total = place.userRatingCount ?? null;
+      const opening_hours = {
+        weekday_text: place.regularOpeningHours?.weekdayDescriptions ?? null,
+        open_now:
+          place.currentOpeningHours?.openNow ??
+          place.regularOpeningHours?.openNow ??
+          null,
+      };
+      const business_status = place.businessStatus ?? null;
+      const photo_reference = place.photos?.[0]?.name ?? null;
+
       if (await isExcluded(name, place.websiteUri)) return null;
 
       if (!place.websiteUri) {
-        return { name, category, address, phone, mapsUrl, reason: "no_website" };
+        return { name, category, address, phone, mapsUrl, reason: "no_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };
       }
 
       const reachable = await isUrlReachable(place.websiteUri);
       if (!reachable) {
-        return { name, category, address, phone, mapsUrl, reason: "unreachable_website" };
+        return { name, category, address, phone, mapsUrl, reason: "unreachable_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };
       }
 
       return null;
