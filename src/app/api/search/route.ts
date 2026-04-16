@@ -65,7 +65,7 @@ async function isExcluded(name: string, websiteUri?: string): Promise<boolean> {
   const nameLower = name.toLowerCase();
 
   const { data: nameMatches } = await supabase
-    .from("Exclusion")
+    .from("exclusion")
     .select("id")
     .ilike("name", `%${nameLower}%`)
     .limit(1);
@@ -81,7 +81,7 @@ async function isExcluded(name: string, websiteUri?: string): Promise<boolean> {
     }
 
     const { data: domainMatches } = await supabase
-      .from("Exclusion")
+      .from("exclusion")
       .select("id")
       .eq("domain", domain)
       .limit(1);
