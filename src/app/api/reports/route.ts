@@ -42,13 +42,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Il feedback non può essere vuoto." }, { status: 400 });
   }
 
+  const trimmedNote = (note ?? "").trim();
+
   await addReport({
     username: session.username,
     type,
     businessName: businessName?.trim() || undefined,
     subject: subject || undefined,
-    note: (note ?? "").trim(),
+    note: trimmedNote,
   });
+
+  console.log("[reports] N8N_WEBHOOK_URL:", process.env.N8N_WEBHOOK_URL);
+
+  if (process.env.N8N_WEBHOOK_URL) {
+    fetch(process.env.N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        utente: session.username,
+        etichetta: type,
+        note: trimmedNote || null,
+      }),
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }
