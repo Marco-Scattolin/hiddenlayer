@@ -64,11 +64,16 @@ async function isUrlReachable(url: string): Promise<boolean> {
 async function isExcluded(name: string, websiteUri?: string): Promise<boolean> {
   const nameLower = name.toLowerCase();
 
-  const { data: nameMatches } = await supabase
-    .from("exclusion")
+  const { data: nameMatches, error: nameError } = await supabase
+    .from("exclusions")
     .select("id")
     .ilike("name", `%${nameLower}%`)
     .limit(1);
+
+  if (nameError) {
+    console.error("Supabase error checking name exclusion:", nameError.message);
+    return true;
+  }
 
   if (nameMatches && nameMatches.length > 0) return true;
 
@@ -80,11 +85,16 @@ async function isExcluded(name: string, websiteUri?: string): Promise<boolean> {
       return false;
     }
 
-    const { data: domainMatches } = await supabase
-      .from("exclusion")
+    const { data: domainMatches, error: domainError } = await supabase
+      .from("exclusions")
       .select("id")
       .eq("domain", domain)
       .limit(1);
+
+    if (domainError) {
+      console.error("Supabase error checking domain exclusion:", domainError.message);
+      return true;
+    }
 
     if (domainMatches && domainMatches.length > 0) return true;
   }
