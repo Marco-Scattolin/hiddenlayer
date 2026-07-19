@@ -1,4 +1,11 @@
-export const REPORT_SUBJECTS = [
+type ReportSubjectDef = {
+  value: string;
+  excludes: boolean;
+  when: string;
+  reviewLabel?: string;
+};
+
+export const REPORT_SUBJECTS: readonly ReportSubjectDef[] = [
   {
     value: "Sito rilevato",
     excludes: true,
@@ -27,4 +34,9 @@ export const REPORT_SUBJECTS = [
   },
 ] as const;
 
-export type ReportSubject = typeof REPORT_SUBJECTS[number]["value"];
+export type ReportSubject =
+  | "Sito rilevato"
+  | "Attività non rilevante"
+  | "Presenza digitale sottovalutata"
+  | "Info obsolete"
+  | "Altro";
