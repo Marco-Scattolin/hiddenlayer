@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { REPORT_SUBJECTS } from "@/lib/reportSubjects";
 
 interface Report {
   id: string;
@@ -10,6 +11,7 @@ interface Report {
   businessName?: string;
   subject?: string;
   note: string;
+  triggeredExclusion?: boolean;
 }
 
 function formatDate(iso: string): string {
@@ -145,6 +147,14 @@ export default function ReportsSection() {
                           style={{ backgroundColor: "#2a2a2a", border: "1px solid #444", color: "#f2f2f2", opacity: 0.6 }}
                         >
                           {r.subject}
+                        </span>
+                      )}
+                      {!isFeedback && r.triggeredExclusion === false && (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: "transparent", border: "1px solid #c92055", color: "#c92055" }}
+                        >
+                          {REPORT_SUBJECTS.find((s) => s.value === r.subject)?.reviewLabel ?? "Da verificare"}
                         </span>
                       )}
                     </div>

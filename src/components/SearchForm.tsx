@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { REPORT_SUBJECTS } from "@/lib/reportSubjects";
 
 interface Business {
+  place_id: string;
   name: string;
   category: string | null;
   address: string;
@@ -26,13 +28,6 @@ type ReportStatus = "idle" | "loading" | "success" | "error";
 
 const PAGE_SIZE = 5;
 
-const REPORT_SUBJECTS = [
-  "Sito non rilevato",
-  "Info obsolete",
-  "Attività non rilevante",
-  "Presenza digitale sottovalutata",
-  "Altro",
-];
 
 export default function SearchForm() {
   const [sector, setSector] = useState("");
@@ -41,6 +36,7 @@ export default function SearchForm() {
   const [page, setPage] = useState(0);
   const [savedUrls, setSavedUrls] = useState<Set<string>>(new Set());
   const [savingUrls, setSavingUrls] = useState<Set<string>>(new Set());
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
 
   // Report modal state
   const [reportTarget, setReportTarget] = useState<Business | null>(null);
@@ -84,6 +80,7 @@ export default function SearchForm() {
           businessName: reportTarget.name,
           subject: reportSubject,
           note: reportNote,
+          placeId: reportTarget.place_id,
         }),
       });
       const data = await res.json();
@@ -92,6 +89,7 @@ export default function SearchForm() {
         setReportError(data.error ?? "Errore sconosciuto.");
         return;
       }
+      setReportedIds((prev) => new Set(prev).add(reportTarget.place_id));
       setReportStatus("success");
       setTimeout(closeReport, 1500);
     } catch {
@@ -138,6 +136,7 @@ export default function SearchForm() {
     setPage(0);
     setSavedUrls(new Set());
     setSavingUrls(new Set());
+    setReportedIds(new Set());
     try {
       const params = new URLSearchParams();
       if (sector.trim()) params.set("sector", sector.trim());
@@ -148,7 +147,24 @@ export default function SearchForm() {
         setStatus({ type: "error", message: data.error ?? "Errore sconosciuto." });
         return;
       }
-      setStatus({ type: "done", businesses: data.businesses });
+      const businesses: Business[] = data.businesses;
+      setStatus({ type: "done", businesses });
+
+      const placeIds = businesses.map((b) => b.place_id).filter(Boolean);
+      if (placeIds.length > 0) {
+        fetch("/api/reports/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ place_ids: placeIds }),
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            if (Array.isArray(d.reported_ids)) {
+              setReportedIds(new Set(d.reported_ids));
+            }
+          })
+          .catch(() => {});
+      }
     } catch {
       setStatus({ type: "error", message: "Impossibile contattare il server." });
     }
@@ -224,6 +240,7 @@ export default function SearchForm() {
           onSave={handleSave}
           savedUrls={savedUrls}
           savingUrls={savingUrls}
+          reportedIds={reportedIds}
         />
       )}
 
@@ -284,7 +301,7 @@ export default function SearchForm() {
                   >
                     <option value="">Seleziona...</option>
                     {REPORT_SUBJECTS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s.value} value={s.value}>{s.value}</option>
                     ))}
                   </select>
                 </div>
@@ -343,6 +360,7 @@ function ResultsList({
   onSave,
   savedUrls,
   savingUrls,
+  reportedIds,
 }: {
   businesses: Business[];
   page: number;
@@ -351,6 +369,7 @@ function ResultsList({
   onSave: (b: Business) => void;
   savedUrls: Set<string>;
   savingUrls: Set<string>;
+  reportedIds: Set<string>;
 }) {
   const totalPages = Math.ceil(businesses.length / PAGE_SIZE);
   const start = page * PAGE_SIZE;
@@ -373,6 +392,7 @@ function ResultsList({
           onSave={() => onSave(biz)}
           isSaved={savedUrls.has(biz.mapsUrl)}
           isSaving={savingUrls.has(biz.mapsUrl)}
+          isReported={reportedIds.has(biz.place_id)}
         />
       ))}
 
@@ -413,12 +433,14 @@ function BusinessCard({
   onSave,
   isSaved,
   isSaving,
+  isReported,
 }: {
   business: Business;
   onReport: () => void;
   onSave: () => void;
   isSaved: boolean;
   isSaving: boolean;
+  isReported: boolean;
 }) {
   const isNoWebsite = business.reason === "no_website";
   const headerGradient = isNoWebsite
@@ -595,14 +617,22 @@ function BusinessCard({
           Apri su Google Maps ↗
         </a>
         <button
-          onClick={onReport}
-          aria-label={`Segnala ${business.name}`}
-          className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
-          style={{ padding: "6px 12px", backgroundColor: "#2a1a1a", border: "1px solid #4a2020", color: "#c97070" }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3a2020")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2a1a1a")}
+          onClick={isReported ? undefined : onReport}
+          disabled={isReported}
+          aria-label={isReported ? "Già segnalata" : `Segnala ${business.name}`}
+          title={isReported ? "Già segnalata" : undefined}
+          className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0 disabled:cursor-default"
+          style={{
+            padding: "6px 12px",
+            backgroundColor: "#2a1a1a",
+            border: "1px solid #4a2020",
+            color: isReported ? "#6a3a3a" : "#c97070",
+            opacity: isReported ? 0.5 : 1,
+          }}
+          onMouseEnter={(e) => { if (!isReported) e.currentTarget.style.backgroundColor = "#3a2020"; }}
+          onMouseLeave={(e) => { if (!isReported) e.currentTarget.style.backgroundColor = "#2a1a1a"; }}
         >
-          Segnala
+          {isReported ? "Già segnalata" : "Segnala"}
         </button>
       </div>
     </div>

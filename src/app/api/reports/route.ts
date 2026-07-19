@@ -3,16 +3,17 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { readReports, addReport } from "@/lib/reports";
 import { sessionOptions, SessionData, ADMIN_USERNAME } from "@/lib/session";
+import { supabase } from "@/lib/supabase";
+import { REPORT_SUBJECTS } from "@/lib/reportSubjects";
 
 const VALID_TYPES = ["Segnalazione risultato", "Feedback prodotto"] as const;
 
-const VALID_SUBJECTS = [
-  "Sito non rilevato",
-  "Info obsolete",
-  "Attività non rilevante",
-  "Presenza digitale sottovalutata",
-  "Altro",
-];
+const VALID_SUBJECTS = REPORT_SUBJECTS.map((s) => s.value);
+
+// Subjects that trigger an exclusion entry
+const EXCLUSION_SUBJECTS = new Set(
+  REPORT_SUBJECTS.filter((s) => s.excludes).map((s) => s.value),
+);
 
 // POST /api/reports — any authenticated user
 export async function POST(request: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
   }
 
-  const { type, businessName, subject, note } = await request.json();
+  const { type, businessName, subject, note, placeId } = await request.json();
 
   if (!VALID_TYPES.includes(type)) {
     return NextResponse.json({ error: "Tipo non valido." }, { status: 400 });
@@ -43,14 +44,44 @@ export async function POST(request: NextRequest) {
   }
 
   const trimmedNote = (note ?? "").trim();
+  const trimmedName = businessName?.trim() || undefined;
 
-  await addReport({
-    username: session.username,
-    type,
-    businessName: businessName?.trim() || undefined,
-    subject: subject || undefined,
-    note: trimmedNote,
-  });
+  const shouldExclude =
+    type === "Segnalazione risultato" ? EXCLUSION_SUBJECTS.has(subject) : false;
+
+  let triggeredExclusion = false;
+  if (shouldExclude && trimmedName) {
+    const { error: exclusionError } = await supabase
+      .from("exclusions")
+      .insert({ name: trimmedName, reason: subject });
+    if (exclusionError) {
+      console.error(
+        `[reports] Failed to insert exclusion — subject: "${subject}", business: "${trimmedName}", placeId: "${placeId ?? "n/a"}":`,
+        exclusionError.message,
+      );
+    } else {
+      triggeredExclusion = true;
+    }
+  }
+
+  try {
+    await addReport({
+      username: session.username,
+      type,
+      businessName: trimmedName,
+      subject: subject || undefined,
+      note: trimmedNote,
+      placeId: placeId || undefined,
+      triggeredExclusion,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Unique constraint on place_id
+    if (msg.includes("reports_place_id_unique") || msg.includes("duplicate key")) {
+      return NextResponse.json({ error: "Attività già segnalata." }, { status: 409 });
+    }
+    throw err;
+  }
 
   console.log("[reports] N8N_WEBHOOK_URL:", process.env.N8N_WEBHOOK_URL);
 

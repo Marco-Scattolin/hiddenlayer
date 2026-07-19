@@ -18,7 +18,13 @@
       "Bash(node:*)",
       "Bash(python3 -c \"import json,sys; users=json.load\\(sys.stdin\\); [print\\(u['username']\\) for u in users]\")",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(echo \"TSC_EXIT:$?\")"
+      "Bash(echo \"TSC_EXIT:$?\")",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__deploy_to_vercel",
+      "mcp__claude_ai_Vercel__get_runtime_logs",
+      "Bash(claude install:*)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

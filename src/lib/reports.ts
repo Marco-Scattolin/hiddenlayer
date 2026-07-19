@@ -8,6 +8,8 @@ export interface Report {
   businessName?: string;
   subject?: string;
   note: string;
+  placeId?: string;
+  triggeredExclusion?: boolean;
 }
 
 type ReportRow = {
@@ -18,6 +20,8 @@ type ReportRow = {
   business_name: string | null;
   object: string | null;
   note: string;
+  place_id: string | null;
+  triggered_exclusion: boolean | null;
 };
 
 function rowToReport(row: ReportRow): Report {
@@ -30,13 +34,15 @@ function rowToReport(row: ReportRow): Report {
   };
   if (row.business_name) report.businessName = row.business_name;
   if (row.object) report.subject = row.object;
+  if (row.place_id) report.placeId = row.place_id;
+  if (row.triggered_exclusion != null) report.triggeredExclusion = row.triggered_exclusion;
   return report;
 }
 
 export async function readReports(): Promise<Report[]> {
   const { data, error } = await supabase
     .from("reports")
-    .select("id, created_at, username, type, business_name, object, note")
+    .select("id, created_at, username, type, business_name, object, note, place_id, triggered_exclusion")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data as ReportRow[]).map(rowToReport);
@@ -49,6 +55,8 @@ export async function addReport(data: Omit<Report, "id" | "createdAt">): Promise
     business_name: data.businessName ?? null,
     object: data.subject ?? null,
     note: data.note,
+    place_id: data.placeId ?? null,
+    triggered_exclusion: data.triggeredExclusion ?? null,
   });
   if (error) throw new Error(error.message);
 }

@@ -25,6 +25,7 @@ interface PlaceResult {
 }
 
 interface Business {
+  place_id: string;
   name: string;
   category: string | null;
   address: string;
@@ -57,6 +58,23 @@ async function isUrlReachable(url: string): Promise<boolean> {
     return false;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+const SOCIAL_DOMAINS = [
+  "facebook.com", "fb.com",
+  "instagram.com",
+  "tiktok.com",
+  "linkedin.com",
+  "twitter.com", "x.com"
+];
+
+function isSocialPage(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    return SOCIAL_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`));
+  } catch {
+    return false;
   }
 }
 
@@ -109,11 +127,11 @@ async function getSectorVariations(sector: string): Promise<string[]> {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 150,
+      max_tokens: 300,
       messages: [
         {
           role: "user",
-          content: `Sei un esperto di ricerca locale in Italia. Dato il settore "${sector}", genera 3-4 varianti di query di ricerca in italiano che un utente userebbe su Google Maps per trovare attività locali di quel tipo. Rispondi SOLO con le varianti, una per riga, senza numerazione, spiegazioni o testo aggiuntivo.`,
+          content: `Sei un esperto di attività commerciali locali italiane. Dato il settore "${sector}", genera 6-8 varianti del nome con cui attività di quel tipo si registrano su Google Maps in Italia. Includi: sinonimi italiani colloquiali, varianti con "centro", "studio", "salone", categorie padre rilevanti, termini in inglese se usati comunemente in Italia. Rispondi SOLO con le varianti, una per riga, senza numerazione, spiegazioni o testo aggiuntivo.`,
         },
       ],
     });
@@ -125,7 +143,7 @@ async function getSectorVariations(sector: string): Promise<string[]> {
       .split("\n")
       .map((v) => v.trim())
       .filter((v) => v.length > 0)
-      .slice(0, 4);
+      .slice(0, 8);
 
     return [sector, ...variations.filter((v) => v.toLowerCase() !== sector.toLowerCase())];
   } catch (err) {
@@ -285,13 +303,13 @@ export async function GET(request: NextRequest) {
 
       if (await isExcluded(name, place.websiteUri)) return null;
 
-      if (!place.websiteUri) {
-        return { name, category, address, phone, mapsUrl, reason: "no_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };
+      if (!place.websiteUri || isSocialPage(place.websiteUri)) {
+        return { place_id: place.id, name, category, address, phone, mapsUrl, reason: "no_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };
       }
 
       const reachable = await isUrlReachable(place.websiteUri);
       if (!reachable) {
-        return { name, category, address, phone, mapsUrl, reason: "unreachable_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };
+        return { place_id: place.id, name, category, address, phone, mapsUrl, reason: "unreachable_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };
       }
 
       return null;
