@@ -49,7 +49,15 @@ SearchForm → POST /api/search → Claude (query gen) → Google Places (parall
 - `reports`: `id`, `username`, `type`, `business_name`, `object` (subject), `note`, `place_id (unique)`, `triggered_exclusion`
 - `exclusions`: `id`, `name` (partial match), `domain` (exact match), `reason`, `createdAt`
 
-**Report subjects** are defined in `src/lib/reportSubjects.ts`. Some subjects (e.g. "Sito rilevato") auto-add the business to exclusions; others are flagged for manual review.
+**Report subjects** are defined in `src/lib/reportSubjects.ts` (`REPORT_SUBJECTS` array, `excludes: boolean` field):
+
+- `excludes: true` → business auto-added to exclusions:
+  - `"Sito rilevato"` — tool missed an existing site
+  - `"Attività non rilevante"` — not a viable lead
+- `excludes: false` → flagged for manual review:
+  - `"Presenza digitale sottovalutata"` — strong social presence, evaluate manually
+  - `"Info obsolete"` — wrong address/phone/hours, business may still be valid
+  - `"Altro"` — any other case, uses the notes field
 
 ## Routes
 
