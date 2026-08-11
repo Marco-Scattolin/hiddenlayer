@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import ExportCsvButton from "@/components/ExportCsvButton";
 import NavLinks from "@/components/NavLinks";
 import UserMenu from "@/components/UserMenu";
 import SavedContacts from "@/components/SavedContacts";
@@ -38,9 +39,12 @@ export default async function SavedPage() {
             <h1 className="text-2xl font-semibold mb-1" style={{ color: "#f2f2f2" }}>
               Salvati
             </h1>
-            <p className="text-sm" style={{ color: "#f2f2f2", opacity: 0.4 }}>
-              {contacts.length} {contacts.length === 1 ? "contatto salvato" : "contatti salvati"}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm" style={{ color: "#f2f2f2", opacity: 0.4 }}>
+                {contacts.length} {contacts.length === 1 ? "contatto salvato" : "contatti salvati"}
+              </p>
+              <ExportCsvButton contacts={contacts} />
+            </div>
           </div>
           <SavedContacts initialContacts={contacts} />
         </div>
