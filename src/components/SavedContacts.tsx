@@ -22,6 +22,38 @@ function ReasonBadge({ reason }: { reason: string }) {
 export default function SavedContacts({ initialContacts }: { initialContacts: SavedContact[] }) {
   const [contacts, setContacts] = useState<SavedContact[]>(initialContacts);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [hintsMap, setHintsMap] = useState<Record<string, string[]>>({});
+  const [loadingHintsMap, setLoadingHintsMap] = useState<Record<string, boolean>>({});
+  const [errorsMap, setErrorsMap] = useState<Record<string, string>>({});
+
+  async function handleGenerateHints(mapsUrl: string) {
+    setLoadingHintsMap((prev) => ({ ...prev, [mapsUrl]: true }));
+    setErrorsMap((prev) => { const n = { ...prev }; delete n[mapsUrl]; return n; });
+    try {
+      const contact = contacts.find((c) => c.mapsUrl === mapsUrl)!;
+      const res = await fetch("/api/generate-hints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: contact.name,
+          category: contact.category,
+          address: contact.address,
+          phone: contact.phone,
+          reason: contact.reason,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setErrorsMap((prev) => ({ ...prev, [mapsUrl]: data.error ?? "Generazione non riuscita, riprova." }));
+      } else {
+        setHintsMap((prev) => ({ ...prev, [mapsUrl]: data.hints }));
+      }
+    } catch {
+      setErrorsMap((prev) => ({ ...prev, [mapsUrl]: "Generazione non riuscita, riprova." }));
+    } finally {
+      setLoadingHintsMap((prev) => ({ ...prev, [mapsUrl]: false }));
+    }
+  }
 
   async function handleRemove(mapsUrl: string) {
     setRemoving(mapsUrl);
@@ -55,10 +87,13 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
           ? "linear-gradient(150deg, #122318 0%, #1a2e22 60%, #262e28 100%)"
           : "linear-gradient(150deg, #2a190a 0%, #2e2210 60%, #2d2b25 100%)";
         const isRemoving = removing === contact.mapsUrl;
+        const hints = hintsMap[contact.mapsUrl];
+        const isLoadingHints = !!loadingHintsMap[contact.mapsUrl];
+        const hintsError = errorsMap[contact.mapsUrl];
 
         return (
+          <div key={contact.mapsUrl}>
           <div
-            key={contact.mapsUrl}
             style={{ backgroundColor: "#2e2e2e", border: "1px solid #383838", borderRadius: "12px", overflow: "hidden" }}
           >
             {/* ── Header ── */}
@@ -169,10 +204,56 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
               >
                 Apri su Google Maps ↗
               </a>
+              <button
+                onClick={() => handleGenerateHints(contact.mapsUrl)}
+                disabled={isLoadingHints}
+                title="Genera spunti di aggancio con AI"
+                aria-label={`Genera agganci per ${contact.name}`}
+                className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
+                style={{
+                  padding: "6px 12px",
+                  background: "linear-gradient(135deg, #c92055 0%, #8f1740 100%)",
+                  color: "#f2f2f2",
+                  border: "none",
+                  cursor: isLoadingHints ? "default" : "pointer",
+                  opacity: isLoadingHints ? 0.7 : 1,
+                }}
+              >
+                {isLoadingHints ? "Generazione…" : "✦ Genera agganci"}
+              </button>
               <span className="text-xs ml-auto" style={{ color: "#9e9e9e" }}>
                 {new Date(contact.savedAt).toLocaleDateString("it-IT")}
               </span>
             </div>
+          </div>
+
+          {(hints && hints.length > 0 || hintsError) && (
+            <div style={{
+              marginTop: "6px",
+              padding: "12px 14px",
+              backgroundColor: "#1e1216",
+              border: "1px solid #5a1030",
+              borderRadius: "10px",
+            }}>
+              {hintsError ? (
+                <p style={{ margin: 0, fontSize: "12px", color: "#e07070" }}>{hintsError}</p>
+              ) : (
+                <>
+                  <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 600, color: "#c92055", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                    Agganci suggeriti
+                  </p>
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {hints!.map((hint, i) => (
+                      <li key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                        <span style={{ color: "#c92055", flexShrink: 0, marginTop: "1px" }}>•</span>
+                        <span style={{ fontSize: "13px", color: "#e0e0e0", lineHeight: 1.5 }}>{hint}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
           </div>
         );
       })}
