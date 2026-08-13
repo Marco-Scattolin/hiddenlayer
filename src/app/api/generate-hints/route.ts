@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(request: NextRequest) {
-  console.log("=== POST HANDLER INVOKED ===");
   let body: unknown;
   try {
     body = await request.json();
@@ -51,6 +50,8 @@ Dati attività:
 Nome: ${name}
 ${details}
 
+I SOLI dati certi su questa attività sono: nome, categoria, zona/indirizzo, e assenza di sito web proprio (${reasonLabel}). Non hai nessuna informazione su: presenza o assenza nei risultati di ricerca Google, posizionamento su Google Maps, cosa trovano realmente gli utenti cercando online, presenza sui social media, recensioni esistenti. NON fare affermazioni, dirette o implicite, su nessuno di questi punti che non hai. Ogni aggancio deve basarsi solo sui dati certi elencati sopra — se un punto richiede di ipotizzare cosa "trovano" o "non trovano" gli utenti cercando online, non generarlo.
+
 Genera esattamente 3-4 bullet point da usare come agganci specifici per questa attività in una mail di primo contatto. Ogni punto deve:
 - essere concreto e specifico a questa attività (settore, zona, situazione web)
 - essere uno spunto da sviluppare, NON una frase pronta da copiare in mail
@@ -63,7 +64,6 @@ NON includere testo introduttivo, conclusioni, numerazione o trattini. Scrivi so
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    console.log("=== FULL MESSAGE OBJECT ===", JSON.stringify(message, null, 2));
     const hints = text
       .split("\n")
       .map((line) => line.replace(/^[-•*\d.)\s]+/, "").trim())
