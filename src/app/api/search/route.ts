@@ -126,8 +126,9 @@ async function getSectorVariations(sector: string): Promise<string[]> {
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 300,
+      model: "claude-sonnet-5",
+      max_tokens: 1024,
+      thinking: { type: "disabled" },
       messages: [
         {
           role: "user",
