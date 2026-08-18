@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 import { SavedContact } from "@/lib/contacts";
+import { PlaceBasicDetails } from "@/lib/googlePlaces";
+
+interface FreshDetails {
+  name: string;
+  address: string;
+  category: string | null;
+  phone: string | null;
+  mapsUrl: string;
+}
 
 function ReasonBadge({ reason }: { reason: string }) {
   const isNoWebsite = reason === "no_website";
@@ -19,52 +28,85 @@ function ReasonBadge({ reason }: { reason: string }) {
   );
 }
 
-export default function SavedContacts({ initialContacts }: { initialContacts: SavedContact[] }) {
+export default function SavedContacts({
+  initialContacts,
+  initialBasicMap,
+}: {
+  initialContacts: SavedContact[];
+  initialBasicMap: Record<string, PlaceBasicDetails>;
+}) {
   const [contacts, setContacts] = useState<SavedContact[]>(initialContacts);
   const [removing, setRemoving] = useState<string | null>(null);
   const [hintsMap, setHintsMap] = useState<Record<string, string[]>>({});
   const [loadingHintsMap, setLoadingHintsMap] = useState<Record<string, boolean>>({});
   const [errorsMap, setErrorsMap] = useState<Record<string, string>>({});
+  const [freshMap, setFreshMap] = useState<Record<string, FreshDetails>>({});
+  const [loadingFreshMap, setLoadingFreshMap] = useState<Record<string, boolean>>({});
+  const [freshErrorMap, setFreshErrorMap] = useState<Record<string, string>>({});
 
-  async function handleGenerateHints(mapsUrl: string) {
-    setLoadingHintsMap((prev) => ({ ...prev, [mapsUrl]: true }));
-    setErrorsMap((prev) => { const n = { ...prev }; delete n[mapsUrl]; return n; });
+  async function handleLoadDetails(placeId: string) {
+    setLoadingFreshMap((prev) => ({ ...prev, [placeId]: true }));
+    setFreshErrorMap((prev) => { const n = { ...prev }; delete n[placeId]; return n; });
     try {
-      const contact = contacts.find((c) => c.mapsUrl === mapsUrl)!;
+      const res = await fetch(`/api/places/${encodeURIComponent(placeId)}`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        const msg = data.error ?? "Errore nel caricamento dettagli.";
+        console.error(`[SavedContacts] handleLoadDetails failed for place_id "${placeId}":`, msg);
+        setFreshErrorMap((prev) => ({ ...prev, [placeId]: msg }));
+      } else {
+        setFreshMap((prev) => ({ ...prev, [placeId]: data.details }));
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Errore di rete.";
+      console.error(`[SavedContacts] handleLoadDetails fetch error for place_id "${placeId}":`, msg);
+      setFreshErrorMap((prev) => ({ ...prev, [placeId]: msg }));
+    } finally {
+      setLoadingFreshMap((prev) => ({ ...prev, [placeId]: false }));
+    }
+  }
+
+  async function handleGenerateHints(placeId: string) {
+    setLoadingHintsMap((prev) => ({ ...prev, [placeId]: true }));
+    setErrorsMap((prev) => { const n = { ...prev }; delete n[placeId]; return n; });
+    try {
+      const basic = initialBasicMap[placeId];
+      const currentFresh = freshMap[placeId];
+      const contact = contacts.find((c) => c.place_id === placeId)!;
       const res = await fetch("/api/generate-hints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: contact.name,
-          category: contact.category,
-          address: contact.address,
-          phone: contact.phone,
+          name: currentFresh?.name ?? basic?.name ?? "",
+          category: currentFresh?.category ?? basic?.category ?? null,
+          address: currentFresh?.address ?? basic?.address ?? "",
+          phone: currentFresh?.phone ?? null,
           reason: contact.reason,
         }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        setErrorsMap((prev) => ({ ...prev, [mapsUrl]: data.error ?? "Generazione non riuscita, riprova." }));
+        setErrorsMap((prev) => ({ ...prev, [placeId]: data.error ?? "Generazione non riuscita, riprova." }));
       } else {
-        setHintsMap((prev) => ({ ...prev, [mapsUrl]: data.hints }));
+        setHintsMap((prev) => ({ ...prev, [placeId]: data.hints }));
       }
     } catch {
-      setErrorsMap((prev) => ({ ...prev, [mapsUrl]: "Generazione non riuscita, riprova." }));
+      setErrorsMap((prev) => ({ ...prev, [placeId]: "Generazione non riuscita, riprova." }));
     } finally {
-      setLoadingHintsMap((prev) => ({ ...prev, [mapsUrl]: false }));
+      setLoadingHintsMap((prev) => ({ ...prev, [placeId]: false }));
     }
   }
 
-  async function handleRemove(mapsUrl: string) {
-    setRemoving(mapsUrl);
+  async function handleRemove(placeId: string) {
+    setRemoving(placeId);
     try {
       const res = await fetch("/api/contacts", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mapsUrl }),
+        body: JSON.stringify({ place_id: placeId }),
       });
       if (res.ok) {
-        setContacts((prev) => prev.filter((c) => c.mapsUrl !== mapsUrl));
+        setContacts((prev) => prev.filter((c) => c.place_id !== placeId));
       }
     } finally {
       setRemoving(null);
@@ -82,17 +124,28 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
   return (
     <div className="flex flex-col gap-3">
       {contacts.map((contact) => {
+        const placeId = contact.place_id ?? null;
         const isNoWebsite = contact.reason === "no_website";
         const headerGradient = isNoWebsite
           ? "linear-gradient(150deg, #122318 0%, #1a2e22 60%, #262e28 100%)"
           : "linear-gradient(150deg, #2a190a 0%, #2e2210 60%, #2d2b25 100%)";
-        const isRemoving = removing === contact.mapsUrl;
-        const hints = hintsMap[contact.mapsUrl];
-        const isLoadingHints = !!loadingHintsMap[contact.mapsUrl];
-        const hintsError = errorsMap[contact.mapsUrl];
+        const basic = placeId ? initialBasicMap[placeId] : undefined;
+        const isRemoving = placeId !== null && removing === placeId;
+        const hints = placeId ? hintsMap[placeId] : undefined;
+        const isLoadingHints = placeId ? !!loadingHintsMap[placeId] : false;
+        const hintsError = placeId ? errorsMap[placeId] : undefined;
+        const fresh = placeId ? freshMap[placeId] : undefined;
+        const isLoadingFresh = placeId ? !!loadingFreshMap[placeId] : false;
+        const freshError = placeId ? freshErrorMap[placeId] : undefined;
+        const displayName = fresh?.name ?? basic?.name;
+        const displayAddress = fresh?.address ?? basic?.address;
+        const displayCategory = fresh?.category ?? basic?.category ?? null;
+        const displayPhone = fresh?.phone ?? null;
+        const displayMapsUrl = fresh?.mapsUrl ?? basic?.mapsUrl ??
+          (placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : "#");
 
         return (
-          <div key={contact.mapsUrl}>
+          <div key={placeId ?? contact.savedAt}>
           <div
             style={{ backgroundColor: "#2e2e2e", border: "1px solid #383838", borderRadius: "12px", overflow: "hidden" }}
           >
@@ -112,7 +165,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                   color: "rgba(255,255,255,0.1)",
                   userSelect: "none",
                 }}>
-                  {contact.name.charAt(0).toUpperCase()}
+                  {displayName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
               </div>
               <div style={{
@@ -122,7 +175,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
 
               {/* Category pill + Name — bottom left */}
               <div style={{ position: "absolute", bottom: "11px", left: "14px", right: "14px" }}>
-                {contact.category && (
+                {displayCategory && (
                   <span style={{
                     display: "inline-block",
                     fontSize: "10px", fontWeight: 500, lineHeight: 1,
@@ -131,7 +184,7 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                     color: "rgba(242,242,242,0.9)",
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}>
-                    {contact.category}
+                    {displayCategory}
                   </span>
                 )}
                 <p style={{
@@ -139,30 +192,30 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                   lineHeight: 1.25, textShadow: "0 1px 6px rgba(0,0,0,0.6)",
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>
-                  {contact.name}
+                  {displayName}
                 </p>
               </div>
             </div>
 
             {/* ── Body ── */}
             <div style={{ padding: "12px 14px 10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-              {contact.address && (
+              {displayAddress && (
                 <div style={{ display: "flex", gap: "7px", alignItems: "flex-start" }}>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginTop: "1px", flexShrink: 0, opacity: 0.5 }}>
                     <path d="M6 1a3.5 3.5 0 0 1 3.5 3.5C9.5 7.5 6 11 6 11S2.5 7.5 2.5 4.5A3.5 3.5 0 0 1 6 1Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" fill="#f2f2f2" />
                   </svg>
                   <span style={{ fontSize: "12px", color: "#f2f2f2", opacity: 0.62, lineHeight: 1.45 }}>
-                    {contact.address}
+                    {displayAddress}
                   </span>
                 </div>
               )}
-              {contact.phone && (
+              {displayPhone && (
                 <div style={{ display: "flex", gap: "7px", alignItems: "center" }}>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
                     <path d="M2.5 1.5h2l.75 2-1.25.75A6.25 6.25 0 0 0 7.25 8l.75-1.25 2 .75v2C7.5 10 1.5 4 2.5 1.5Z" fill="#f2f2f2" />
                   </svg>
                   <span style={{ fontSize: "12px", color: "#f2f2f2", opacity: 0.62 }}>
-                    {contact.phone}
+                    {displayPhone}
                   </span>
                 </div>
               )}
@@ -175,10 +228,10 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
               borderTop: "1px solid #343434",
             }}>
               <button
-                onClick={() => handleRemove(contact.mapsUrl)}
-                disabled={isRemoving}
+                onClick={() => { if (placeId) handleRemove(placeId); }}
+                disabled={isRemoving || !placeId}
                 title="Rimuovi dai salvati"
-                aria-label={`Rimuovi ${contact.name} dai salvati`}
+                aria-label="Rimuovi dai salvati"
                 className="flex items-center justify-center rounded-lg w-11 h-11 md:w-8 md:h-8"
                 style={{
                   fontSize: "14px",
@@ -192,11 +245,32 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                 ★
               </button>
               <ReasonBadge reason={contact.reason} />
+              {placeId && !fresh && (
+                <button
+                  onClick={() => handleLoadDetails(placeId)}
+                  disabled={isLoadingFresh}
+                  title="Carica dati aggiornati da Google Places"
+                  className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "#2a2200",
+                    border: "1px solid #7a6010",
+                    color: "#c9a030",
+                    cursor: isLoadingFresh ? "default" : "pointer",
+                    opacity: isLoadingFresh ? 0.5 : 1,
+                  }}
+                >
+                  {isLoadingFresh ? "Caricamento…" : "↺ Aggiorna"}
+                </button>
+              )}
+              {freshError && (
+                <span style={{ fontSize: "11px", color: "#e07070" }}>{freshError}</span>
+              )}
               <a
-                href={contact.mapsUrl}
+                href={displayMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Apri ${contact.name} su Google Maps`}
+                aria-label={`Apri ${displayName ?? "attività"} su Google Maps`}
                 className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
                 style={{ padding: "6px 12px", backgroundColor: "#383838", color: "#f2f2f2", textDecoration: "none" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#444")}
@@ -205,10 +279,10 @@ export default function SavedContacts({ initialContacts }: { initialContacts: Sa
                 Apri su Google Maps ↗
               </a>
               <button
-                onClick={() => handleGenerateHints(contact.mapsUrl)}
-                disabled={isLoadingHints}
+                onClick={() => { if (placeId) handleGenerateHints(placeId); }}
+                disabled={isLoadingHints || !placeId}
                 title="Genera spunti di aggancio con AI"
-                aria-label={`Genera agganci per ${contact.name}`}
+                aria-label={`Genera agganci per ${displayName ?? "attività"}`}
                 className="text-xs font-medium rounded-lg flex items-center min-h-[44px] md:min-h-0"
                 style={{
                   padding: "6px 12px",

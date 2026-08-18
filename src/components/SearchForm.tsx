@@ -99,7 +99,7 @@ export default function SearchForm() {
   }
 
   async function handleSave(business: Business) {
-    const key = business.mapsUrl;
+    const key = business.place_id;
     if (savedUrls.has(key) || savingUrls.has(key)) return;
 
     setSavingUrls((prev) => new Set(prev).add(key));
@@ -108,12 +108,8 @@ export default function SearchForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: business.name,
-          category: business.category,
-          address: business.address,
-          mapsUrl: business.mapsUrl,
-          phone: business.phone,
           reason: business.reason,
+          place_id: business.place_id,
         }),
       });
       if (res.ok) {
@@ -390,8 +386,8 @@ function ResultsList({
           business={biz}
           onReport={() => onReport(biz)}
           onSave={() => onSave(biz)}
-          isSaved={savedUrls.has(biz.mapsUrl)}
-          isSaving={savingUrls.has(biz.mapsUrl)}
+          isSaved={savedUrls.has(biz.place_id)}
+          isSaving={savingUrls.has(biz.place_id)}
           isReported={reportedIds.has(biz.place_id)}
         />
       ))}

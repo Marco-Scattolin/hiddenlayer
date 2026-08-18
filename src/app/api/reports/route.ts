@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   if (shouldExclude && trimmedName) {
     const { error: exclusionError } = await supabase
       .from("exclusions")
-      .insert({ name: trimmedName, reason: subject });
+      .insert({ reason: subject, place_id: placeId || null });
     if (exclusionError) {
       console.error(
         `[reports] Failed to insert exclusion — subject: "${subject}", business: "${trimmedName}", placeId: "${placeId ?? "n/a"}":`,

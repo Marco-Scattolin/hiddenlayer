@@ -8,12 +8,18 @@ import { cookies } from "next/headers";
 import { getIronSession } from "iron-session";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { readContacts } from "@/lib/contacts";
+import { getPlacesBasicDetailsBulk } from "@/lib/googlePlaces";
 
 export default async function SavedPage() {
   const cookieStore = await cookies();
   const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
 
   const contacts = session.username ? await readContacts(session.username) : [];
+
+  const placeIds = contacts
+    .map((c) => c.place_id)
+    .filter((id): id is string => !!id);
+  const basicMap = await getPlacesBasicDetailsBulk(placeIds);
 
   return (
     <div
@@ -46,7 +52,7 @@ export default async function SavedPage() {
               <ExportCsvButton contacts={contacts} />
             </div>
           </div>
-          <SavedContacts initialContacts={contacts} />
+          <SavedContacts initialContacts={contacts} initialBasicMap={basicMap} />
         </div>
       </main>
     </div>

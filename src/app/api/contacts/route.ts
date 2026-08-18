@@ -13,19 +13,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
   }
 
-  const { name, category, address, mapsUrl, phone, reason } = await request.json();
+  const { reason, place_id } = await request.json();
 
-  if (!name?.trim() || !mapsUrl?.trim()) {
+  if (!place_id?.trim()) {
     return NextResponse.json({ error: "Dati mancanti." }, { status: 400 });
   }
 
   await addContact(session.username, {
-    name: name.trim(),
-    category: category ?? null,
-    address: address ?? "",
-    mapsUrl: mapsUrl.trim(),
-    phone: phone ?? null,
     reason: reason ?? "",
+    place_id: place_id ?? null,
   });
 
   return NextResponse.json({ ok: true });
@@ -40,13 +36,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
   }
 
-  const { mapsUrl } = await request.json();
+  const { place_id } = await request.json();
 
-  if (!mapsUrl?.trim()) {
+  if (!place_id?.trim()) {
     return NextResponse.json({ error: "Dati mancanti." }, { status: 400 });
   }
 
-  await removeContact(session.username, mapsUrl.trim());
+  await removeContact(session.username, place_id.trim());
 
   return NextResponse.json({ ok: true });
 }

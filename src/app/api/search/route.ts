@@ -78,22 +78,21 @@ function isSocialPage(url: string): boolean {
   }
 }
 
-// Returns true if the business name or domain matches an exclusion row.
-async function isExcluded(name: string, websiteUri?: string): Promise<boolean> {
-  const nameLower = name.toLowerCase();
-
-  const { data: nameMatches, error: nameError } = await supabase
+// Returns true if the business matches an exclusion row (place_id esatto o domain esatto).
+async function isExcluded(placeId: string, websiteUri?: string): Promise<boolean> {
+  // Path 1: exact match on place_id
+  const { data: placeMatches, error: placeError } = await supabase
     .from("exclusions")
     .select("id")
-    .ilike("name", `%${nameLower}%`)
+    .eq("place_id", placeId)
     .limit(1);
 
-  if (nameError) {
-    console.error("Supabase error checking name exclusion:", nameError.message);
+  if (placeError) {
+    console.error("Supabase error checking place_id exclusion:", placeError.message);
     return true;
   }
 
-  if (nameMatches && nameMatches.length > 0) return true;
+  if (placeMatches && placeMatches.length > 0) return true;
 
   if (websiteUri) {
     let domain: string;
@@ -302,7 +301,7 @@ export async function GET(request: NextRequest) {
       const business_status = place.businessStatus ?? null;
       const photo_reference = place.photos?.[0]?.name ?? null;
 
-      if (await isExcluded(name, place.websiteUri)) return null;
+      if (await isExcluded(place.id, place.websiteUri)) return null;
 
       if (!place.websiteUri || isSocialPage(place.websiteUri)) {
         return { place_id: place.id, name, category, address, phone, mapsUrl, reason: "no_website", rating, user_ratings_total, opening_hours, business_status, photo_reference };

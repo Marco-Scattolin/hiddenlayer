@@ -1,33 +1,21 @@
 import { supabase } from "@/lib/supabase";
 
 export interface SavedContact {
-  name: string;
-  category: string | null;
-  address: string;
-  phone: string | null;
-  mapsUrl: string;
   reason: string;
+  place_id?: string | null;
   savedAt: string; // ISO date string
 }
 
 type ContactRow = {
-  name: string;
-  category: string | null;
-  address: string | null;
-  phone: string | null;
-  maps_url: string;
   reason: string;
   saved_at: string;
+  place_id?: string | null;
 };
 
 function rowToContact(row: ContactRow): SavedContact {
   return {
-    name: row.name,
-    category: row.category ?? null,
-    address: row.address ?? "",
-    phone: row.phone ?? null,
-    mapsUrl: row.maps_url,
     reason: row.reason,
+    place_id: row.place_id ?? null,
     savedAt: row.saved_at,
   };
 }
@@ -35,7 +23,7 @@ function rowToContact(row: ContactRow): SavedContact {
 export async function readContacts(username: string): Promise<SavedContact[]> {
   const { data, error } = await supabase
     .from("contacts")
-    .select("name, category, address, phone, maps_url, reason, saved_at")
+    .select("reason, saved_at, place_id")
     .eq("username", username)
     .order("saved_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -54,11 +42,6 @@ export async function writeContacts(username: string, contacts: SavedContact[]):
 
   const rows = contacts.map((c) => ({
     username,
-    name: c.name,
-    category: c.category ?? null,
-    address: c.address,
-    phone: c.phone ?? null,
-    maps_url: c.mapsUrl,
     reason: c.reason,
     saved_at: c.savedAt,
   }));
@@ -71,15 +54,11 @@ export async function addContact(username: string, contact: Omit<SavedContact, "
   const { error } = await supabase.from("contacts").upsert(
     {
       username,
-      name: contact.name,
-      category: contact.category ?? null,
-      address: contact.address,
-      phone: contact.phone ?? null,
-      maps_url: contact.mapsUrl,
       reason: contact.reason,
+      place_id: contact.place_id ?? null,
       saved_at: new Date().toISOString(),
     },
-    { onConflict: "username,maps_url", ignoreDuplicates: true }
+    { onConflict: "username,place_id", ignoreDuplicates: true }
   );
   if (error) throw new Error(error.message);
 }
@@ -93,12 +72,12 @@ export async function renameContactsFile(oldUsername: string, newUsername: strin
   if (error) throw new Error(error.message);
 }
 
-export async function removeContact(username: string, mapsUrl: string): Promise<void> {
+export async function removeContact(username: string, placeId: string): Promise<void> {
   const { error } = await supabase
     .from("contacts")
     .delete()
     .eq("username", username)
-    .eq("maps_url", mapsUrl);
+    .eq("place_id", placeId);
   if (error) throw new Error(error.message);
 }
 

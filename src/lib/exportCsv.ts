@@ -1,5 +1,3 @@
-import { SavedContact } from "@/lib/contacts";
-
 function escapeField(value: string): string {
   if (value.includes('"') || value.includes(";") || value.includes(",") || value.includes("\n")) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -12,10 +10,21 @@ const REASON_LABEL: Record<string, string> = {
   unreachable_website: "Sito irraggiungibile",
 };
 
-export function exportSavedLeadsToCsv(contacts: SavedContact[]): void {
+export interface ExportRow {
+  place_id: string;
+  name: string;
+  category: string | null;
+  address: string;
+  phone: string | null;
+  mapsUrl: string;
+  reason: string;
+  savedAt: string;
+}
+
+export function exportSavedLeadsToCsv(rows: ExportRow[]): void {
   const header = ["Categoria", "Nome", "Indirizzo", "Telefono", "Stato", "Google Maps", "Data salvataggio"];
 
-  const rows = contacts.map((c) => [
+  const csvRows = rows.map((c) => [
     escapeField(c.category ?? ""),
     escapeField(c.name),
     escapeField(c.address),
@@ -25,7 +34,7 @@ export function exportSavedLeadsToCsv(contacts: SavedContact[]): void {
     escapeField(new Date(c.savedAt).toLocaleDateString("it-IT")),
   ]);
 
-  const csv = [header.join(";"), ...rows.map((r) => r.join(";"))].join("\r\n");
+  const csv = [header.join(";"), ...csvRows.map((r) => r.join(";"))].join("\r\n");
 
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
